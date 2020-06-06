@@ -49,3 +49,6 @@ Route.group(() => {
   .prefix('users')
   .middleware(['auth:jwt'])
 
+Route.post('/tweet', 'TweetController.tweet').middleware(['auth:jwt'])
+
+

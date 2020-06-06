@@ -31,9 +31,17 @@ Route.group(() => {
 
   Route.put('/change_password', 'UserController.changePassword');
 
+  Route.get(':username', 'UserController.showProfile')
+
 })
   .prefix('account')
   .middleware(['auth:jwt'])
 
 
+  Route.group(() => {
+    Route.get('/users_to_follow', 'UserController.usersToFollow');
+    Route.post('/follow/:id', 'UserController.follow')
+})
+    .prefix('users')
+    .middleware(['auth:jwt'])
 

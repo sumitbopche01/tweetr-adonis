@@ -46,7 +46,7 @@ class UserController {
         }
     }
 
-    async me ({ auth, response }) {
+    async me({ auth, response }) {
         const user = await User.query()
             .where('id', auth.current.user.id)
             .with('tweets', builder => {
@@ -63,18 +63,18 @@ class UserController {
                 builder.with('replies')
             })
             .firstOrFail()
-    
+
         return response.json({
             status: 'success',
             data: user
         })
     }
 
-    async updateProfile ({ request, auth, response }) {
+    async updateProfile({ request, auth, response }) {
         try {
             // get currently authenticated user
             const user = auth.current.user
-    
+
             // update with new data entered
             user.name = request.input('name')
             user.username = request.input('username')
@@ -82,9 +82,9 @@ class UserController {
             user.location = request.input('location')
             user.bio = request.input('bio')
             user.website_url = request.input('website_url')
-    
+
             await user.save()
-    
+
             return response.json({
                 status: 'success',
                 message: 'Profile updated!',
@@ -98,16 +98,16 @@ class UserController {
         }
     }
 
-    async changePassword ({ request, auth, response }) {
+    async changePassword({ request, auth, response }) {
         // get currently authenticated user
         const user = auth.current.user
-    
+
         // verify if current password matches
         const verifyPassword = await Hash.verify(
             request.input('password'),
             user.password
         )
-    
+
         // display appropriate message
         if (!verifyPassword) {
             return response.status(400).json({
@@ -115,17 +115,81 @@ class UserController {
                 message: 'Current password could not be verified! Please try again.'
             })
         }
-    
+
         // hash and save new password
         user.password = await Hash.make(request.input('newPassword'))
         await user.save()
-    
+
         return response.json({
             status: 'success',
             message: 'Password updated!'
         })
     }
+
+    async showProfile({ request, params, response }) {
+        try {
+            const user = await User.query()
+                .where('username', params.username)
+                .with('tweets', builder => {
+                    builder.with('user')
+                    builder.with('favorites')
+                    builder.with('replies')
+                })
+                .with('following')
+                .with('followers')
+                .with('favorites')
+                .with('favorites.tweet', builder => {
+                    builder.with('user')
+                    builder.with('favorites')
+                    builder.with('replies')
+                })
+                .firstOrFail()
+
+            return response.json({
+                status: 'success',
+                data: user
+            })
+        } catch (error) {
+            return response.status(404).json({
+                status: 'error',
+                message: 'User not found'
+            })
+        }
+    }
+
+    async usersToFollow ({ params, auth, response }) {
+        // get currently authenticated user
+        const user = auth.current.user
     
+        // get the IDs of users the currently authenticated user is already following
+        const usersAlreadyFollowing = await user.following().ids()
+    
+        // fetch users the currently authenticated user is not already following
+        const usersToFollow = await User.query()
+            .whereNot('id', user.id)
+            .whereNotIn('id', usersAlreadyFollowing)
+            .pick(3)
+    
+        return response.json({
+            status: 'success',
+            data: usersToFollow
+        })
+    }
+
+    async follow ({ request, auth, response }) {
+        // get currently authenticated user
+        const user = auth.current.user
+    
+        // add to user's followers
+        await user.following().attach(request.input('user_id'))
+    
+        return response.json({
+            status: 'success',
+            data: null
+        })
+    }
+
+
 }
 
 module.exports = UserController

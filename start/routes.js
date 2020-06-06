@@ -38,10 +38,13 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 
-  Route.group(() => {
-    Route.get('/users_to_follow', 'UserController.usersToFollow');
-    Route.post('/follow/:id', 'UserController.follow')
+Route.group(() => {
+  Route.get('/users_to_follow', 'UserController.usersToFollow');
+  Route.post('/follow/:id', 'UserController.follow')
+
+  // unfollow user
+  Route.delete('/unfollow/:id', 'UserController.unFollow')
 })
-    .prefix('users')
-    .middleware(['auth:jwt'])
+  .prefix('users')
+  .middleware(['auth:jwt'])
 
